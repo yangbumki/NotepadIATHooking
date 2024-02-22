@@ -17,6 +17,9 @@ IMAGE_IMPORT_DESCRIPTOR* iid = nullptr;
 IMAGE_THUNK_DATA* itd;
 void* oriFuncAddr;
 
+void TestFunc() {
+	SetWindowTextW(FindWindowA(NULL, NULL), L"Hello");
+};
 void ErrorMessage(const char* msg) {
 	MessageBoxA(NULL, msg, DLL_TITLE, NULL);
 	ExitProcess(-1);
@@ -44,6 +47,7 @@ void* FindThunk(const char* dllName, void* originIID) {
 		};
 
 		return &imagebase[iid->FirstThunk];
+		//return &imagebase[iid->OriginalFirstThunk];
 	};
 };
 
@@ -58,12 +62,12 @@ BOOL SetHookingIAT(void* originITD, void* originFunctionAddr, void* changeFuncti
 		break;
 	};
 
-	DWORD* oldProtect = nullptr;
+	DWORD oldProtect = NULL;
 
-	if (!VirtualProtect((LPVOID)&itd->u1.Function, sizeof(ULONGLONG), PAGE_EXECUTE_READWRITE, oldProtect)) ErrorMessage("Virtualprotect");
+	if (!VirtualProtect((LPVOID)&itd->u1.Function, sizeof(ULONGLONG), PAGE_EXECUTE_READWRITE, &oldProtect)) ErrorMessage("Virtualprotect");
 	itd->u1.Function = (ULONGLONG)changeFunctionAddr;
 
-	if (!VirtualProtect((LPVOID)&itd->u1.Function, sizeof(ULONGLONG), *oldProtect, oldProtect)) ErrorMessage("Virtualprotect");
+	if (!VirtualProtect((LPVOID)&itd->u1.Function, sizeof(ULONGLONG), oldProtect, &oldProtect)) ErrorMessage("Virtualprotect");
 	return TRUE;
 };
 
